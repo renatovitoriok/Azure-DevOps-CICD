@@ -80,14 +80,14 @@ stages:
             displayName: 'Preparar Dockerfile'
 
           - script: |
-              docker build -t sampleapp:hml "$(Pipeline.Workspace)/$(artifactName)"
+              docker build -t sampleapp:$(Build.BuildId) "$(Pipeline.Workspace)/$(artifactName)"
             displayName: 'Criar imagem Docker'
 
           - script: |
               docker run -d \
                 --name sampleapp-hml \
                 -p 8080:8080 \
-                sampleapp:hml
+                sampleapp:$(Build.BuildId)
             displayName: 'Iniciar container HML'
 
           - script: |
@@ -142,14 +142,14 @@ stages:
             displayName: 'Preparar Dockerfile'
 
           - script: |
-              docker build -t sampleapp:prd "$(Pipeline.Workspace)/$(artifactName)"
+              docker build -t sampleapp:$(Build.BuildId) "$(Pipeline.Workspace)/$(artifactName)"
             displayName: 'Criar imagem Docker PRD'
 
           - script: |
               docker run -d \
                 --name sampleapp-prd \
                 -p 8080:8080 \
-                sampleapp:prd
+                sampleapp:$(Build.BuildId)
             displayName: 'Iniciar container PRD'
 
           - script: |

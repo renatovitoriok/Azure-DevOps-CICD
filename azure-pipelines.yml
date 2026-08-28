@@ -58,7 +58,7 @@ stages:
 - stage: HML
   displayName: 'Deploy HML'
   dependsOn: CI
-  condition: succeeded()
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
 
   jobs:
   - deployment: DeployHML

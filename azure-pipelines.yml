@@ -53,6 +53,18 @@ stages:
           "$(Build.ArtifactStagingDirectory)"
       displayName: 'Criar imagem Docker'
 
+    - script: |
+        docker save \
+          -o "$(Build.ArtifactStagingDirectory)/sampleapp-$(Build.BuildId).tar" \
+          sampleapp:$(Build.BuildId)
+      displayName: 'Salvar imagem Docker'
+
+    - task: PublishPipelineArtifact@1
+      displayName: 'Publicar imagem Docker'
+      inputs:
+        targetPath: '$(Build.ArtifactStagingDirectory)/sampleapp-$(Build.BuildId).tar'
+        artifact: 'docker-image'
+
     - task: PublishPipelineArtifact@1
       displayName: 'Publicar artefato'
       inputs:

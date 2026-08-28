@@ -112,3 +112,65 @@ stages:
               docker rm -f sampleapp-hml || true
             displayName: 'Finalizar container HML'
             condition: always()
+
+
+# =========================
+# PRD
+# =========================
+- stage: PRD
+  displayName: 'Deploy PRD'
+  dependsOn: HML
+  condition: succeeded()
+
+  jobs:
+  - deployment: DeployPRD
+    displayName: 'Deploy da aplicação em PRD'
+    environment: 'PRD'
+
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+
+          - checkout: self
+
+          - download: current
+            artifact: '$(artifactName)'
+
+          - script: |
+              cp "$(Build.SourcesDirectory)/SampleApp/Dockerfile" "$(Pipeline.Workspace)/$(artifactName)/Dockerfile"
+            displayName: 'Preparar Dockerfile'
+
+          - script: |
+              docker build -t sampleapp:prd "$(Pipeline.Workspace)/$(artifactName)"
+            displayName: 'Criar imagem Docker PRD'
+
+          - script: |
+              docker run -d \
+                --name sampleapp-prd \
+                -p 8080:8080 \
+                sampleapp:prd
+            displayName: 'Iniciar container PRD'
+
+          - script: |
+              for i in {1..10}
+              do
+                if curl --fail http://localhost:8080/health
+                then
+                  echo "Health check PRD realizado com sucesso."
+                  exit 0
+                fi
+
+                echo "Aplicação PRD ainda não disponível. Tentativa $i de 10..."
+                sleep 3
+              done
+
+              echo "Health check PRD falhou."
+              docker logs sampleapp-prd
+              exit 1
+            displayName: 'Validar Health Check PRD'
+
+          - script: |
+              docker rm -f sampleapp-prd || true
+            displayName: 'Finalizar container PRD'
+            condition: always()

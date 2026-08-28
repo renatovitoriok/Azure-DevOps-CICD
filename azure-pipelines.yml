@@ -93,15 +93,15 @@ stages:
           - checkout: self
 
           - download: current
-            artifact: '$(artifactName)'
+            artifact: 'docker-image'
 
           - script: |
               cp "$(Build.SourcesDirectory)/SampleApp/Dockerfile" "$(Pipeline.Workspace)/$(artifactName)/Dockerfile"
             displayName: 'Preparar Dockerfile'
 
           - script: |
-              docker build -t sampleapp:$(Build.BuildId) "$(Pipeline.Workspace)/$(artifactName)"
-            displayName: 'Criar imagem Docker'
+              docker load -i "$(Pipeline.Workspace)/docker-image/sampleapp-$(Build.BuildId).tar"
+            displayName: 'Carregar imagem Docker'
 
           - script: |
               docker run -d \
@@ -155,15 +155,15 @@ stages:
           - checkout: self
 
           - download: current
-            artifact: '$(artifactName)'
+            artifact: 'docker-image'
 
           - script: |
               cp "$(Build.SourcesDirectory)/SampleApp/Dockerfile" "$(Pipeline.Workspace)/$(artifactName)/Dockerfile"
             displayName: 'Preparar Dockerfile'
 
           - script: |
-              docker build -t sampleapp:$(Build.BuildId) "$(Pipeline.Workspace)/$(artifactName)"
-            displayName: 'Criar imagem Docker PRD'
+              docker load -i "$(Pipeline.Workspace)/docker-image/sampleapp-$(Build.BuildId).tar"
+            displayName: 'Carregar imagem Docker PRD'
 
           - script: |
               docker run -d \

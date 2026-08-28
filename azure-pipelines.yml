@@ -27,7 +27,7 @@ steps:
 - script: dotnet build $(projectPath) --configuration $(buildConfiguration) --no-restore
   displayName: 'Compilar aplicação'
 
-- script: dotnet test SampleApp.Tests/SampleApp.Tests.csproj --configuration $(buildConfiguration) --no-build
+- script: dotnet test SampleApp.Tests/SampleApp.Tests.csproj --configuration $(buildConfiguration)
   displayName: 'Executar testes automatizados'
 
 - script: dotnet publish $(projectPath) --configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory) --no-build

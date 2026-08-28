@@ -96,10 +96,6 @@ stages:
             artifact: 'docker-image'
 
           - script: |
-              cp "$(Build.SourcesDirectory)/SampleApp/Dockerfile" "$(Pipeline.Workspace)/$(artifactName)/Dockerfile"
-            displayName: 'Preparar Dockerfile'
-
-          - script: |
               docker load -i "$(Pipeline.Workspace)/docker-image/sampleapp-$(Build.BuildId).tar"
             displayName: 'Carregar imagem Docker'
 
@@ -156,10 +152,6 @@ stages:
 
           - download: current
             artifact: 'docker-image'
-
-          - script: |
-              cp "$(Build.SourcesDirectory)/SampleApp/Dockerfile" "$(Pipeline.Workspace)/$(artifactName)/Dockerfile"
-            displayName: 'Preparar Dockerfile'
 
           - script: |
               docker load -i "$(Pipeline.Workspace)/docker-image/sampleapp-$(Build.BuildId).tar"

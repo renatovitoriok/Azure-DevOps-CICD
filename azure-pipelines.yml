@@ -12,7 +12,7 @@ pool:
 variables:
   buildConfiguration: 'Release'
   projectPath: 'SampleApp/SampleApp.csproj'
-  artifactName: 'drop'
+  artifactName: 'publish'
 
 steps:
 - task: UseDotNet@2

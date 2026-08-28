@@ -45,6 +45,14 @@ stages:
     - script: dotnet publish $(projectPath) --configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory) --no-build
       displayName: 'Publicar aplicação'
 
+    - script: |
+        cp "$(Build.SourcesDirectory)/SampleApp/Dockerfile" "$(Build.ArtifactStagingDirectory)/Dockerfile"
+
+        docker build \
+          -t sampleapp:$(Build.BuildId) \
+          "$(Build.ArtifactStagingDirectory)"
+      displayName: 'Criar imagem Docker'
+
     - task: PublishPipelineArtifact@1
       displayName: 'Publicar artefato'
       inputs:

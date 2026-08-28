@@ -23,3 +23,5 @@ app.MapGet("/info", () => new
 });
 
 app.Run();
+
+public partial class Program { }

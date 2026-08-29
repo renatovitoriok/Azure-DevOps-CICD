@@ -21,18 +21,15 @@ variables:
   artifactName: 'publish'
 
 stages:
-
 # =========================
 # CI
 # =========================
 - stage: CI
   displayName: 'CI - Build e Testes'
   condition: eq('${{ parameters.rollbackBuildId }}', '')
-
   jobs:
   - job: Build
     displayName: 'Build da aplicação'
-
     steps:
     - task: UseDotNet@2
       displayName: 'Instalar .NET 8 SDK'
@@ -78,7 +75,6 @@ stages:
         targetPath: '$(Build.ArtifactStagingDirectory)'
         artifact: '$(artifactName)'
 
-
 # =========================
 # HML
 # =========================
@@ -90,19 +86,17 @@ stages:
     eq(variables['Build.SourceBranch'], 'refs/heads/main'),
     eq('${{ parameters.rollbackBuildId }}', '')
   )
-
   jobs:
   - deployment: DeployHML
     displayName: 'Deploy da aplicação em HML'
-    environment: 'HML'
+    environment: HML
+    pool:
+      vmImage: 'ubuntu-latest'
 
     strategy:
       runOnce:
         deploy:
           steps:
-
-          - checkout: self
-
           - download: current
             artifact: 'docker-image'
 
@@ -140,7 +134,6 @@ stages:
             displayName: 'Finalizar container HML'
             condition: always()
 
-
 # =========================
 # PRD
 # =========================
@@ -151,19 +144,16 @@ stages:
     succeeded(),
     eq('${{ parameters.rollbackBuildId }}', '')
   )
-
   jobs:
   - deployment: DeployPRD
     displayName: 'Deploy da aplicação em PRD'
-    environment: 'PRD'
-
+    environment: PRD
+    pool:
+      vmImage: 'ubuntu-latest'
     strategy:
       runOnce:
         deploy:
           steps:
-
-          - checkout: self
-
           - download: current
             artifact: 'docker-image'
 
@@ -201,7 +191,6 @@ stages:
             displayName: 'Finalizar container PRD'
             condition: always()
 
-
 # =========================
 # ROLLBACK
 # =========================
@@ -216,4 +205,4 @@ stages:
     - script: |
         echo "Rollback solicitado."
         echo "BuildId selecionado: ${{ parameters.rollbackBuildId }}"
-      displayName: 'Identificar versão para rollback
+      displayName: 'Identificar versão para rollback'

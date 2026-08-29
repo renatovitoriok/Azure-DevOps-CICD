@@ -199,3 +199,13 @@ stages:
         echo "Rollback solicitado."
         echo "BuildId selecionado: ${{ parameters.rollbackBuildId }}"
       displayName: 'Identificar versão para rollback'
+    - task: DownloadPipelineArtifact@2
+      displayName: 'Baixar imagem da versão anterior'
+      inputs:
+        buildType: 'specific'
+        project: '$(System.TeamProject)'
+        definition: '$(System.DefinitionId)'
+        buildVersionToDownload: 'specific'
+        pipelineId: '${{ parameters.rollbackBuildId }}'
+        artifactName: 'docker-image'
+        targetPath: '$(Pipeline.Workspace)/rollback-image'

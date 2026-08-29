@@ -209,3 +209,7 @@ stages:
         pipelineId: '${{ parameters.rollbackBuildId }}'
         artifactName: 'docker-image'
         targetPath: '$(Pipeline.Workspace)/rollback-image'
+
+    - script: |
+        docker load -i "$(Pipeline.Workspace)/rollback-image/sampleapp-${{ parameters.rollbackBuildId }}.tar"
+      displayName: 'Carregar imagem de rollback'

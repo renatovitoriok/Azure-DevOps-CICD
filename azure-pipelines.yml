@@ -213,3 +213,33 @@ stages:
     - script: |
         docker load -i "$(Pipeline.Workspace)/rollback-image/sampleapp-${{ parameters.rollbackBuildId }}.tar"
       displayName: 'Carregar imagem de rollback'
+
+    - script: |
+        docker run -d \
+          --name sampleapp-rollback \
+          -p 8080:8080 \
+          sampleapp:${{ parameters.rollbackBuildId }}
+      displayName: 'Iniciar container de rollback'
+
+    - script: |
+        for i in {1..10}
+        do
+          if curl --fail http://localhost:8080/health
+          then
+            echo "Health check do rollback realizado com sucesso."
+            exit 0
+          fi
+    
+          echo "Aplicação de rollback ainda não disponível. Tentativa $i de 10..."
+          sleep 3
+        done
+    
+        echo "Health check do rollback falhou."
+        docker logs sampleapp-rollback
+        exit 1
+      displayName: 'Validar Health Check do rollback'
+
+    - script: |
+        docker rm -f sampleapp-rollback || true
+      displayName: 'Finalizar container de rollback'
+      condition: always()

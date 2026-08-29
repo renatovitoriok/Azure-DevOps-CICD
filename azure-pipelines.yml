@@ -243,3 +243,66 @@ stages:
         docker rm -f sampleapp-rollback || true
       displayName: 'Finalizar container de rollback'
       condition: always()
+
+# =========================
+# ROLLBACK PRD
+# =========================
+- stage: ROLLBACK_PRD
+  displayName: 'Rollback PRD'
+  dependsOn: ROLLBACK
+  condition: and(succeeded(), ne('${{ parameters.rollbackBuildId }}', ''))
+
+  jobs:
+  - deployment: RollbackPRD
+    displayName: 'Aplicar rollback em PRD'
+    environment: 'PRD'
+
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+
+          - task: DownloadPipelineArtifact@2
+            displayName: 'Baixar imagem para rollback em PRD'
+            inputs:
+              buildType: 'specific'
+              project: '$(System.TeamProject)'
+              definition: '$(System.DefinitionId)'
+              buildVersionToDownload: 'specific'
+              pipelineId: '${{ parameters.rollbackBuildId }}'
+              artifactName: 'docker-image'
+              targetPath: '$(Pipeline.Workspace)/rollback-prd'
+
+          - script: |
+              docker load -i "$(Pipeline.Workspace)/rollback-prd/sampleapp-${{ parameters.rollbackBuildId }}.tar"
+            displayName: 'Carregar imagem de rollback em PRD'
+
+          - script: |
+              docker run -d \
+                --name sampleapp-rollback-prd \
+                -p 8080:8080 \
+                sampleapp:${{ parameters.rollbackBuildId }}
+            displayName: 'Iniciar versão de rollback em PRD'
+
+          - script: |
+              for i in {1..10}
+              do
+                if curl --fail http://localhost:8080/health
+                then
+                  echo "Health check do rollback em PRD realizado com sucesso."
+                  exit 0
+                fi
+
+                echo "Rollback em PRD ainda não disponível. Tentativa $i de 10..."
+                sleep 3
+              done
+
+              echo "Health check do rollback em PRD falhou."
+              docker logs sampleapp-rollback-prd
+              exit 1
+            displayName: 'Validar Health Check do rollback em PRD'
+
+          - script: |
+              docker rm -f sampleapp-rollback-prd || true
+            displayName: 'Finalizar container de rollback em PRD'
+            condition: always()

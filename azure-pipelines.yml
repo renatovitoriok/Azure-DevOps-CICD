@@ -81,11 +81,7 @@ stages:
 - stage: HML
   displayName: 'Deploy HML'
   dependsOn: CI
-  condition: and(
-    succeeded(), 
-    eq(variables['Build.SourceBranch'], 'refs/heads/main'),
-    eq('${{ parameters.rollbackBuildId }}', '')
-  )
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'), eq('${{ parameters.rollbackBuildId }}', ''))
   jobs:
   - deployment: DeployHML
     displayName: 'Deploy da aplicação em HML'
@@ -140,10 +136,7 @@ stages:
 - stage: PRD
   displayName: 'Deploy PRD'
   dependsOn: HML
-  condition: and(
-    succeeded(),
-    eq('${{ parameters.rollbackBuildId }}', '')
-  )
+  condition: and(succeeded(), eq('${{ parameters.rollbackBuildId }}', ''))
   jobs:
   - deployment: DeployPRD
     displayName: 'Deploy da aplicação em PRD'

@@ -82,10 +82,12 @@ stages:
   displayName: 'Deploy HML'
   dependsOn: CI
   condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'), eq('${{ parameters.rollbackBuildId }}', ''))
+
   jobs:
   - deployment: DeployHML
     displayName: 'Deploy da aplicação em HML'
     environment: HML
+
     pool:
       vmImage: 'ubuntu-latest'
 
@@ -93,42 +95,10 @@ stages:
       runOnce:
         deploy:
           steps:
-          - download: current
-            artifact: 'docker-image'
-
-          - script: |
-              docker load -i "$(Pipeline.Workspace)/docker-image/sampleapp-$(Build.BuildId).tar"
-            displayName: 'Carregar imagem Docker'
-
-          - script: |
-              docker run -d \
-                --name sampleapp-hml \
-                -p 8080:8080 \
-                sampleapp:$(Build.BuildId)
-            displayName: 'Iniciar container HML'
-
-          - script: |
-              for i in {1..10}
-              do
-                if curl --fail http://localhost:8080/health
-                then
-                  echo "Health check realizado com sucesso."
-                  exit 0
-                fi
-
-                echo "Aplicação ainda não disponível. Tentativa $i de 10..."
-                sleep 3
-              done
-
-              echo "Health check falhou."
-              docker logs sampleapp-hml
-              exit 1
-            displayName: 'Validar Health Check'
-
-          - script: |
-              docker rm -f sampleapp-hml || true
-            displayName: 'Finalizar container HML'
-            condition: always()
+          - template: templates/deploy-docker.yml
+            parameters:
+              containerName: 'sampleapp-hml'
+              environmentName: 'HML'
 
 # =========================
 # PRD
@@ -137,52 +107,23 @@ stages:
   displayName: 'Deploy PRD'
   dependsOn: HML
   condition: and(succeeded(), eq('${{ parameters.rollbackBuildId }}', ''))
+
   jobs:
   - deployment: DeployPRD
     displayName: 'Deploy da aplicação em PRD'
     environment: PRD
+
     pool:
       vmImage: 'ubuntu-latest'
+
     strategy:
       runOnce:
         deploy:
           steps:
-          - download: current
-            artifact: 'docker-image'
-
-          - script: |
-              docker load -i "$(Pipeline.Workspace)/docker-image/sampleapp-$(Build.BuildId).tar"
-            displayName: 'Carregar imagem Docker PRD'
-
-          - script: |
-              docker run -d \
-                --name sampleapp-prd \
-                -p 8080:8080 \
-                sampleapp:$(Build.BuildId)
-            displayName: 'Iniciar container PRD'
-
-          - script: |
-              for i in {1..10}
-              do
-                if curl --fail http://localhost:8080/health
-                then
-                  echo "Health check PRD realizado com sucesso."
-                  exit 0
-                fi
-
-                echo "Aplicação PRD ainda não disponível. Tentativa $i de 10..."
-                sleep 3
-              done
-
-              echo "Health check PRD falhou."
-              docker logs sampleapp-prd
-              exit 1
-            displayName: 'Validar Health Check PRD'
-
-          - script: |
-              docker rm -f sampleapp-prd || true
-            displayName: 'Finalizar container PRD'
-            condition: always()
+          - template: templates/deploy-docker.yml
+            parameters:
+              containerName: 'sampleapp-prd'
+              environmentName: 'PRD'
 
 # =========================
 # ROLLBACK

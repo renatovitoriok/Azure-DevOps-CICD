@@ -1,0 +1,45 @@
+parameters:
+- name: containerName
+  type: string
+
+- name: environmentName
+  type: string
+
+steps:
+
+- download: current
+  artifact: 'docker-image'
+
+- script: |
+    docker load -i "$(Pipeline.Workspace)/docker-image/sampleapp-$(Build.BuildId).tar"
+  displayName: 'Carregar imagem Docker'
+
+- script: |
+    docker run -d \
+      --name ${{ parameters.containerName }} \
+      -p 8080:8080 \
+      sampleapp:$(Build.BuildId)
+  displayName: 'Iniciar container ${{ parameters.environmentName }}'
+
+- script: |
+    for i in {1..10}
+    do
+      if curl --fail http://localhost:8080/health
+      then
+        echo "Health check de ${{ parameters.environmentName }} realizado com sucesso."
+        exit 0
+      fi
+
+      echo "Aplicação ainda não disponível. Tentativa $i de 10..."
+      sleep 3
+    done
+
+    echo "Health check de ${{ parameters.environmentName }} falhou."
+    docker logs ${{ parameters.containerName }}
+    exit 1
+  displayName: 'Validar Health Check ${{ parameters.environmentName }}'
+
+- script: |
+    docker rm -f ${{ parameters.containerName }} || true
+  displayName: 'Finalizar container ${{ parameters.environmentName }}'
+  condition: always()

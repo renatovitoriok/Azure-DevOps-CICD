@@ -1,0 +1,56 @@
+parameters:
+- name: containerName
+  type: string
+
+- name: environmentName
+  type: string
+
+- name: rollbackBuildId
+  type: string
+
+steps:
+
+- task: DownloadPipelineArtifact@2
+  displayName: 'Baixar imagem de rollback'
+  inputs:
+    buildType: 'specific'
+    project: '$(System.TeamProject)'
+    definition: '$(System.DefinitionId)'
+    buildVersionToDownload: 'specific'
+    pipelineId: '${{ parameters.rollbackBuildId }}'
+    artifactName: 'docker-image'
+    targetPath: '$(Pipeline.Workspace)/rollback-image'
+
+- script: |
+    docker load -i "$(Pipeline.Workspace)/rollback-image/sampleapp-${{ parameters.rollbackBuildId }}.tar"
+  displayName: 'Carregar imagem de rollback'
+
+- script: |
+    docker run -d \
+      --name ${{ parameters.containerName }} \
+      -p 8080:8080 \
+      sampleapp:${{ parameters.rollbackBuildId }}
+  displayName: 'Iniciar rollback ${{ parameters.environmentName }}'
+
+- script: |
+    for i in {1..10}
+    do
+      if curl --fail http://localhost:8080/health
+      then
+        echo "Health check do rollback em ${{ parameters.environmentName }} realizado com sucesso."
+        exit 0
+      fi
+
+      echo "Rollback em ${{ parameters.environmentName }} ainda não disponível. Tentativa $i de 10..."
+      sleep 3
+    done
+
+    echo "Health check do rollback em ${{ parameters.environmentName }} falhou."
+    docker logs ${{ parameters.containerName }}
+    exit 1
+  displayName: 'Validar Health Check rollback ${{ parameters.environmentName }}'
+
+- script: |
+    docker rm -f ${{ parameters.containerName }} || true
+  displayName: 'Finalizar rollback ${{ parameters.environmentName }}'
+  condition: always()

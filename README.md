@@ -184,27 +184,27 @@ Dessa forma, a versão promovida para PRD é exatamente a mesma que foi validada
 
 ## Versionamento
 
-A pipeline mantém rastreabilidade por meio do `BuildId` do Azure DevOps e também utiliza **GitVersion** para evolução do versionamento semântico.
+O projeto utiliza **GitVersion** para geração automática de versões seguindo o padrão **Semantic Versioning (SemVer)**.
 
-O histórico Git é obtido com profundidade completa (`fetchDepth: 0`) para permitir que o GitVersion analise commits, branches e tags.
+A versão calculada pela pipeline é utilizada de forma consistente durante todo o fluxo de entrega:
 
-A versão inicial do projeto foi marcada pela tag:
+- versão do assembly da aplicação .NET;
+- endpoint `/info` da API;
+- tag SemVer da imagem Docker;
+- validação da versão implantada em HML;
+- validação da versão implantada em PRD;
+- criação automática da tag Git após o deploy bem-sucedido em produção.
 
-```text
-v1.0.0
-```
+A imagem Docker mantém duas identificações:
 
-A configuração utiliza mensagens explícitas de SemVer:
+- `sampleapp:<SemVer>` — versão funcional da aplicação;
+- `sampleapp:<BuildId>` — identificação técnica e rastreável da execução da pipeline.
 
-```text
-+semver: fix       → PATCH
-+semver: feature   → MINOR
-+semver: breaking  → MAJOR
-```
+Após a conclusão do deploy em PRD, a pipeline cria automaticamente a tag correspondente no repositório, por exemplo:
 
-Em Pull Requests, o GitVersion identifica a versão como pré-release, permitindo distinguir builds de validação das versões promovidas pela `main`.
+`v1.0.1`
 
-> A integração final da versão calculada pelo GitVersion com o `appVersion` e as tags da imagem Docker ainda está sendo validada neste laboratório.
+Essa tag passa a ser utilizada pelo GitVersion como referência para o cálculo da próxima versão.
 
 ## Infrastructure as Code com Terraform
 

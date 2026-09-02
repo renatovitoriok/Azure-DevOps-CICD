@@ -43,8 +43,17 @@ stages:
     - script: dotnet build $(projectPath) --configuration $(buildConfiguration) --no-restore
       displayName: 'Compilar aplicação'
 
-    - script: dotnet test SampleApp.Tests/SampleApp.Tests.csproj --configuration $(buildConfiguration)
-      displayName: 'Executar testes automatizados'
+    - script: |
+        dotnet test SampleApp.Tests/SampleApp.Tests.csproj \
+          --configuration $(buildConfiguration) \
+          --collect:"XPlat Code Coverage" \
+          --results-directory "$(Agent.TempDirectory)/TestResults"
+      displayName: 'Executar testes com cobertura'
+
+    - task: PublishCodeCoverageResults@2
+      displayName: 'Publicar cobertura de testes'
+      inputs:
+        summaryFileLocation: '$(Agent.TempDirectory)/TestResults/**/coverage.cobertura.xml'
 
     - script: dotnet publish $(projectPath) --configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory) --no-build
       displayName: 'Publicar aplicação'

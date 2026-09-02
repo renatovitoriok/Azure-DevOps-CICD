@@ -132,6 +132,50 @@ stages:
         artifact: '$(artifactName)'
 
 # =========================
+# TERRAFORM
+# =========================
+- stage: TERRAFORM
+  displayName: 'Terraform - Validar e Planejar'
+  dependsOn: CI
+  condition: and(succeeded(), eq('${{ parameters.rollbackBuildId }}', 'NONE'))
+
+  jobs:
+  - job: TerraformPlan
+    displayName: 'Terraform Init, Validate e Plan'
+
+    steps:
+    - checkout: self
+
+    - script: |
+        sudo apt-get update
+        sudo apt-get install -y gnupg software-properties-common curl
+
+        curl -fsSL https://apt.releases.hashicorp.com/gpg | \
+          gpg --dearmor | \
+          sudo tee /usr/share/keyrings/hashicorp-archive-keyring.gpg > /dev/null
+
+        echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | \
+          sudo tee /etc/apt/sources.list.d/hashicorp.list
+
+        sudo apt-get update
+        sudo apt-get install -y terraform
+
+        terraform --version
+      displayName: 'Instalar Terraform'
+
+    - task: AzureCLI@2
+      displayName: 'Terraform Init, Validate e Plan'
+      inputs:
+        azureSubscription: 'azure-terraform-sc'
+        scriptType: 'bash'
+        scriptLocation: 'inlineScript'
+        workingDirectory: '$(Build.SourcesDirectory)/terraform'
+        inlineScript: |
+          terraform init
+          terraform validate
+          terraform plan
+
+# =========================
 # HML
 # =========================
 - stage: HML

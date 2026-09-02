@@ -46,6 +46,7 @@ stages:
     steps:
     - checkout: self
       fetchDepth: 0
+      persistCredentials: true
     
     - task: UseDotNet@2
       displayName: 'Instalar .NET 8 SDK'
@@ -317,6 +318,50 @@ stages:
             parameters:
               containerName: 'sampleapp-prd'
               environmentName: 'PRD'
+
+# =========================
+# TAG
+# =========================
+- stage: TAG
+  displayName: 'Criar tag da versão'
+  dependsOn:
+  - PRD
+  - CI
+
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'), eq('${{ parameters.rollbackBuildId }}', 'NONE'))
+
+  variables:
+    appVersion: $[ stageDependencies.CI.Build.outputs['GitVersion.appVersionOutput'] ]
+
+  jobs:
+  - job: CreateTag
+    displayName: 'Criar tag Git'
+
+    pool:
+      vmImage: 'ubuntu-latest'
+
+    steps:
+    - checkout: self
+      fetchDepth: 0
+      persistCredentials: true
+
+    - script: |
+        TAG="v$(appVersion)"
+
+        echo "Versão: $(appVersion)"
+        echo "Tag que será criada: $TAG"
+
+        git config user.name "Azure DevOps Pipeline"
+        git config user.email "pipeline@azuredevops.local"
+
+        if git rev-parse "$TAG" >/dev/null 2>&1; then
+          echo "A tag $TAG já existe. Nenhuma ação necessária."
+          exit 0
+        fi
+
+        git tag -a "$TAG" -m "Release $TAG"
+        git push origin "$TAG"
+      displayName: 'Criar e publicar tag'
 
 # =========================
 # ROLLBACK

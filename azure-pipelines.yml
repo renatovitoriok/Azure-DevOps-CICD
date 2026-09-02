@@ -40,8 +40,12 @@ stages:
     - script: dotnet restore $(projectPath)
       displayName: 'Restaurar dependências'
 
-    - script: dotnet build $(projectPath) --configuration $(buildConfiguration) --no-restore
-      displayName: 'Compilar aplicação'
+    - script: |
+        dotnet build $(projectPath) \
+          --configuration $(buildConfiguration) \
+          --no-restore \
+          /warnaserror
+      displayName: 'Compilar aplicação com análise de qualidade'
 
     - script: |
         dotnet test SampleApp.Tests/SampleApp.Tests.csproj \

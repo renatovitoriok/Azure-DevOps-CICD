@@ -27,6 +27,12 @@ variables:
 - name: artifactName
   value: 'publish'
 
+- name: major
+  value: '1'
+
+- name: minor
+  value: '0'
+
 stages:
 # =========================
 # CI
@@ -38,6 +44,15 @@ stages:
   - job: Build
     displayName: 'Build da aplicação'
     steps:
+    - script: |
+        echo "##vso[task.setvariable variable=appVersion]$(major).$(minor).$(Build.BuildId)"
+      displayName: 'Gerar versão da aplicação'
+
+    - script: |
+        echo "Versão da aplicação: $(appVersion)"
+        echo "BuildId: $(Build.BuildId)"
+      displayName: 'Exibir versão da aplicação'
+    
     - task: UseDotNet@2
       displayName: 'Instalar .NET 8 SDK'
       inputs:
@@ -94,6 +109,7 @@ stages:
 
         docker build \
           -t sampleapp:$(Build.BuildId) \
+          -t sampleapp:$(appVersion) \
           "$(Build.ArtifactStagingDirectory)"
       displayName: 'Criar imagem Docker'
 

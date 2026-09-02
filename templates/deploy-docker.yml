@@ -40,6 +40,16 @@ steps:
   displayName: 'Validar Health Check ${{ parameters.environmentName }}'
 
 - script: |
+    echo "Validando versão publicada..."
+
+    RESPONSE=$(curl --fail http://localhost:8080/info)
+
+    echo "$RESPONSE"
+
+    echo "$RESPONSE" | grep "\"version\":\"$(appVersion)\""
+  displayName: 'Validar versão da aplicação'
+
+- script: |
     docker rm -f ${{ parameters.containerName }} || true
   displayName: 'Finalizar container ${{ parameters.environmentName }}'
   condition: always()

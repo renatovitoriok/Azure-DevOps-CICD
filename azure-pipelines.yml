@@ -68,6 +68,11 @@ stages:
         dotnet-gitversion /version
       displayName: 'Instalar GitVersion'
 
+    - script: |
+        export PATH="$PATH:$HOME/.dotnet/tools"
+        dotnet-gitversion
+      displayName: 'Calcular versão SemVer'
+
     - task: Cache@2
       displayName: 'Cache de pacotes NuGet'
       inputs:

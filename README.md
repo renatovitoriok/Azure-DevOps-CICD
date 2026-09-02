@@ -28,7 +28,7 @@ O projeto implementa conceitos como:
 - Terraform Plan em pipeline
 - Terraform Apply com aprovação manual
 - Autenticação Azure via Workload Identity Federation
-- Versionamento semântico com GitVersion
+- Versionamento semântico automatizado com GitVersion e criação de tags Git após deploy em PRD
 
 > Este é um ambiente de laboratório. Os deployments utilizam agentes hospedados pelo Azure Pipelines e containers temporários, portanto HML e PRD representam ambientes lógicos para demonstração do processo de CI/CD.
 
@@ -93,6 +93,13 @@ Pull Request
                            │
                            ▼
                       Health Check
+                           │
+                           ▼
+                    Tag automática
+                           │
+                           ▼
+                       v1.0.x
+
 ```
 
 A branch `main` é protegida e as alterações são realizadas através de **Pull Requests**. O CI é executado antes do merge para validar o código.
@@ -411,6 +418,6 @@ O projeto demonstra um fluxo de CI/CD contemplando:
 - Terraform e Remote State;
 - Terraform Plan e Apply;
 - autenticação federada com Azure;
-- versionamento semântico com GitVersion.
+- versionamento semântico automatizado com GitVersion, propagação da versão entre CI/HML/PRD e criação automática de tags Git.
 
 A implementação foi construída de forma incremental, permitindo validar individualmente cada etapa e evoluir a pipeline mantendo rastreabilidade e controle sobre código, infraestrutura e versões implantadas.

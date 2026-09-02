@@ -187,7 +187,7 @@ stages:
 - stage: TERRAFORM_APPLY
   displayName: 'Terraform - Aplicar Infraestrutura'
   dependsOn: TERRAFORM
-  condition: condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'), eq('${{ parameters.rollbackBuildId }}', 'NONE'))
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'), eq('${{ parameters.rollbackBuildId }}', 'NONE'))
 
   jobs:
   - deployment: TerraformApply

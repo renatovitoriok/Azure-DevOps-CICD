@@ -29,6 +29,6 @@ app.MapGet("/info", () => new
     description = "Laboratório de CI/CD com Azure DevOps"
 });
 
-app.Run();
+await app.RunAsync();
 
 public partial class Program { }

@@ -16,9 +16,16 @@ pool:
   vmImage: 'ubuntu-latest'
 
 variables:
-  buildConfiguration: 'Release'
-  projectPath: 'SampleApp/SampleApp.csproj'
-  artifactName: 'publish'
+- group: cicd-variables
+
+- name: buildConfiguration
+  value: 'Release'
+
+- name: projectPath
+  value: 'SampleApp/SampleApp.csproj'
+
+- name: artifactName
+  value: 'publish'
 
 stages:
 # =========================
@@ -39,6 +46,17 @@ stages:
 
     - script: dotnet restore $(projectPath)
       displayName: 'Restaurar dependências'
+
+    - script: |
+        if [ -z "$APP_API_KEY" ]; then
+          echo "Secret APP_API_KEY não foi carregado."
+          exit 1
+        fi
+
+        echo "Secret APP_API_KEY carregado com sucesso."
+      displayName: 'Validar secret da pipeline'
+      env:
+        APP_API_KEY: $(APP_API_KEY)
 
     - script: |
         dotnet build $(projectPath) \

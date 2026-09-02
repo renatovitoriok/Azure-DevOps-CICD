@@ -173,7 +173,67 @@ stages:
         inlineScript: |
           terraform init
           terraform validate
-          terraform plan
+          terraform plan -out=tfplan
+
+    - task: PublishPipelineArtifact@1
+      displayName: 'Publicar Terraform Plan'
+      inputs:
+        targetPath: '$(Build.SourcesDirectory)/terraform/tfplan'
+        artifact: 'terraform-plan'
+
+# =========================
+# TERRAFORM APPLY
+# =========================
+- stage: TERRAFORM_APPLY
+  displayName: 'Terraform - Aplicar Infraestrutura'
+  dependsOn: TERRAFORM
+  condition: and(
+    succeeded(),
+    eq(variables['Build.SourceBranch'], 'refs/heads/main'),
+    eq('${{ parameters.rollbackBuildId }}', 'NONE')
+  )
+
+  jobs:
+  - deployment: TerraformApply
+    displayName: 'Terraform Apply'
+    environment: 'Terraform-Apply'
+
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - checkout: self
+
+          - download: current
+            artifact: 'terraform-plan'
+
+          - script: |
+              sudo apt-get update
+              sudo apt-get install -y gnupg software-properties-common curl
+
+              curl -fsSL https://apt.releases.hashicorp.com/gpg | \
+                gpg --dearmor | \
+                sudo tee /usr/share/keyrings/hashicorp-archive-keyring.gpg > /dev/null
+
+              echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | \
+                sudo tee /etc/apt/sources.list.d/hashicorp.list
+
+              sudo apt-get update
+              sudo apt-get install -y terraform
+
+              terraform --version
+            displayName: 'Instalar Terraform'
+
+          - task: AzureCLI@2
+            displayName: 'Terraform Apply'
+            inputs:
+              azureSubscription: 'azure-terraform-sc'
+              scriptType: 'bash'
+              scriptLocation: 'inlineScript'
+              workingDirectory: '$(Build.SourcesDirectory)/terraform'
+              inlineScript: |
+                terraform init
+                terraform apply "$(Pipeline.Workspace)/terraform-plan/tfplan"
 
 # =========================
 # HML

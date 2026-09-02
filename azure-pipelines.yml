@@ -132,6 +132,33 @@ stages:
         artifact: '$(artifactName)'
 
 # =========================
+# TERRAFORM
+# =========================
+- stage: TERRAFORM
+  displayName: 'Terraform - Validar e Planejar'
+  dependsOn: CI
+  condition: and(succeeded(), eq('${{ parameters.rollbackBuildId }}', 'NONE'))
+
+  jobs:
+  - job: TerraformPlan
+    displayName: 'Terraform Init, Validate e Plan'
+
+    steps:
+    - checkout: self
+
+    - task: AzureCLI@2
+      displayName: 'Terraform Init, Validate e Plan'
+      inputs:
+        azureSubscription: 'azure-terraform-sc'
+        scriptType: 'bash'
+        scriptLocation: 'inlineScript'
+        workingDirectory: '$(Build.SourcesDirectory)/terraform'
+        inlineScript: |
+          terraform init
+          terraform validate
+          terraform plan
+
+# =========================
 # HML
 # =========================
 - stage: HML

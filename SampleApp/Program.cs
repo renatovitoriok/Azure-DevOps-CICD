@@ -1,12 +1,19 @@
+using System.Reflection;
+
 var builder = WebApplication.CreateBuilder(args);
 
 var app = builder.Build();
+
+var version = Assembly.GetExecutingAssembly()
+    .GetName()
+    .Version?
+    .ToString(3) ?? "unknown";
 
 app.MapGet("/", () => new
 {
     application = "Azure DevOps CI/CD",
     status = "Running",
-    version = "1.0.0",
+    version,
     environment = app.Environment.EnvironmentName
 });
 
@@ -18,7 +25,7 @@ app.MapGet("/health", () => Results.Ok(new
 app.MapGet("/info", () => new
 {
     application = "Azure DevOps CI/CD",
-    version = "1.0.0",
+    version,
     description = "Laboratório de CI/CD com Azure DevOps"
 });
 

@@ -66,6 +66,8 @@ stages:
 
         echo "Versão calculada pelo GitVersion: $VERSION"
         echo "##vso[task.setvariable variable=appVersion]$VERSION"
+        echo "##vso[task.setvariable variable=appVersionOutput;isOutput=true]$VERSION"
+      name: GitVersion
       displayName: 'Calcular versão SemVer'
 
     - script: |
@@ -109,6 +111,9 @@ stages:
     - script: |
         dotnet test SampleApp.Tests/SampleApp.Tests.csproj \
           --configuration $(buildConfiguration) \
+          -p:Version=$(appVersion) \
+          -p:AssemblyVersion=$(appVersion).0 \
+          -p:FileVersion=$(appVersion).0 \
           --collect:"XPlat Code Coverage" \
           --results-directory "$(Agent.TempDirectory)/TestResults"
       displayName: 'Executar testes com cobertura'
@@ -262,6 +267,9 @@ stages:
   dependsOn: CI
   condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'), eq('${{ parameters.rollbackBuildId }}', 'NONE'))
 
+  variables:
+    appVersion: $[ stageDependencies.CI.Build.outputs['GitVersion.appVersionOutput'] ]
+    
   jobs:
   - deployment: DeployHML
     displayName: 'Deploy da aplicação em HML'
@@ -284,8 +292,14 @@ stages:
 # =========================
 - stage: PRD
   displayName: 'Deploy PRD'
-  dependsOn: HML
+  dependsOn: 
+  - HML
+  - CI
+  
   condition: and(succeeded(), eq('${{ parameters.rollbackBuildId }}', 'NONE'))
+
+  variables:
+    appVersion: $[ stageDependencies.CI.Build.outputs['GitVersion.appVersionOutput'] ]
 
   jobs:
   - deployment: DeployPRD

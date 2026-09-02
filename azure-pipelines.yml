@@ -47,15 +47,6 @@ stages:
     - checkout: self
       fetchDepth: 0
     
-    - script: |
-        echo "##vso[task.setvariable variable=appVersion]$(major).$(minor).$(Build.BuildId)"
-      displayName: 'Gerar versão da aplicação'
-
-    - script: |
-        echo "Versão da aplicação: $(appVersion)"
-        echo "BuildId: $(Build.BuildId)"
-      displayName: 'Exibir versão da aplicação'
-    
     - task: UseDotNet@2
       displayName: 'Instalar .NET 8 SDK'
       inputs:
@@ -70,9 +61,18 @@ stages:
 
     - script: |
         export PATH="$PATH:$HOME/.dotnet/tools"
-        dotnet-gitversion
+
+        VERSION=$(dotnet-gitversion /showvariable MajorMinorPatch)
+
+        echo "Versão calculada pelo GitVersion: $VERSION"
+        echo "##vso[task.setvariable variable=appVersion]$VERSION"
       displayName: 'Calcular versão SemVer'
 
+    - script: |
+        echo "Versão da aplicação: $(appVersion)"
+        echo "BuildId: $(Build.BuildId)"
+      displayName: 'Exibir versão da aplicação'
+    
     - task: Cache@2
       displayName: 'Cache de pacotes NuGet'
       inputs:
@@ -100,6 +100,9 @@ stages:
         dotnet build $(projectPath) \
           --configuration $(buildConfiguration) \
           --no-restore \
+          -p:Version=$(appVersion) \
+          -p:AssemblyVersion=$(appVersion).0 \
+          -p:FileVersion=$(appVersion).0 \
           /warnaserror
       displayName: 'Compilar aplicação com análise de qualidade'
 
@@ -126,6 +129,12 @@ stages:
           -t sampleapp:$(appVersion) \
           "$(Build.ArtifactStagingDirectory)"
       displayName: 'Criar imagem Docker'
+
+    - script: |
+        echo "Versão SemVer: sampleapp:$(appVersion)"
+        echo "Versão técnica: sampleapp:$(Build.BuildId)"
+        docker images sampleapp
+      displayName: 'Validar versões da imagem Docker'
 
     - script: |
         docker save \

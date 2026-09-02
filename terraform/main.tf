@@ -21,6 +21,11 @@ provider "azurerm" {
 resource "azurerm_resource_group" "rg" {
   name     = "rg-cicd-lab"
   location = "Brazil South"
+
+  tags = {
+    environment = "lab"
+    managed_by  = "terraform"
+  }
 }
 
 resource "azurerm_storage_account" "tfstate" {

@@ -1,10 +1,10 @@
 # Demonstração de CI/CD com Azure DevOps
 
-![Azure DevOps](https://img.shields.io/badge/Azure%20DevOps-CI%2FCD-0078D7) ![.NET](https://img.shields.io/badge/.NET-8.0-512BD4) ![Docker](https://img.shields.io/badge/Docker-Container-2496ED) ![Terraform](https://img.shields.io/badge/Terraform-IaC-844FBA) ![GitVersion](https://img.shields.io/badge/GitVersion-SemVer-blue)
+![Azure DevOps](https://img.shields.io/badge/Azure%20DevOps-CI%2FCD-0078D7) ![.NET](https://img.shields.io/badge/.NET-8.0-512BD4) ![Docker](https://img.shields.io/badge/Docker-Container-2496ED) ![Terraform](https://img.shields.io/badge/Terraform-IaC-844FBA) ![GitVersion](https://img.shields.io/badge/GitVersion-SemVer-blue) ![SonarQube Cloud](https://img.shields.io/badge/SonarQube%20Cloud-Quality%20Gate-126ED3)
 
 Este repositório apresenta uma implementação prática de uma pipeline de **CI/CD utilizando Azure DevOps**, criada como laboratório e portfólio técnico de DevOps.
 
-A solução utiliza uma aplicação **.NET 8**, testes automatizados, Docker, GitVersion, Terraform e pipelines YAML para demonstrar o ciclo de integração e entrega contínua, desde a criação de uma feature até sua promoção para produção.
+A solução utiliza uma aplicação **.NET 8**, testes automatizados, Docker, GitVersion, Terraform, SonarQube Cloud e pipelines YAML para demonstrar o ciclo de integração e entrega contínua, desde a criação de uma feature até sua promoção para produção.
 
 O projeto implementa conceitos como:
 
@@ -12,7 +12,10 @@ O projeto implementa conceitos como:
 - Pull Requests e proteção da branch `main`
 - Build e testes automatizados
 - Cobertura de testes
-- Validação de qualidade durante o build
+- Análise estática de código com SonarQube Cloud
+- Quality Gate integrado aos Pull Requests
+- Análise de segurança, confiabilidade, manutenibilidade e duplicações
+- Validação de cobertura de código novo
 - Cache de pacotes NuGet
 - Gerenciamento de secrets com Variable Groups
 - Criação e versionamento de imagens Docker
@@ -38,7 +41,8 @@ O projeto implementa conceitos como:
 - **YAML** — definição da pipeline e dos templates reutilizáveis
 - **.NET 8 / ASP.NET Core** — aplicação utilizada no laboratório
 - **xUnit** — testes automatizados
-- **Cobertura** — geração e publicação de cobertura de testes
+- **Cobertura / OpenCover** — geração e publicação de cobertura de testes
+- **SonarQube Cloud** — análise estática de código, segurança e Quality Gate
 - **Docker** — criação e execução das imagens da aplicação
 - **Git e GitHub** — versionamento, branches, Pull Requests e Releases
 - **GitVersion** — cálculo de versões semânticas
@@ -47,7 +51,7 @@ O projeto implementa conceitos como:
 - **Azure Storage** — armazenamento remoto do state do Terraform
 - **Pipeline Artifacts** — transporte de artefatos entre stages
 - **Variable Groups** — gerenciamento de variáveis e secrets
-- **Shell/Bash** — automação de comandos Docker, Terraform e Health Checks
+- **Shell/Bash** — automação de comandos Docker, Terraform e Health Check
 
 ## Fluxo do Pipeline
 
@@ -60,10 +64,12 @@ Pull Request
       ├──────────────► CI
       │                 │
       │                 ├─ Restore / Cache NuGet
+      │                 ├─ SonarQube Prepare
       │                 ├─ Build
       │                 ├─ Testes
-      │                 ├─ Cobertura
-      │                 ├─ Quality Check
+      │                 ├─ Cobertura (Cobertura + OpenCover)
+      │                 ├─ SonarQube Analysis
+      │                 ├─ Quality Gate
       │                 ├─ GitVersion
       │                 └─ Build da imagem Docker
       │
@@ -102,7 +108,7 @@ Pull Request
 
 ```
 
-A branch `main` é protegida e as alterações são realizadas através de **Pull Requests**. O CI é executado antes do merge para validar o código.
+A branch `main` é protegida e as alterações são realizadas através de **Pull Requests**. O CI é executado antes do merge para validar build, testes, cobertura e qualidade do código através do **SonarQube Cloud e seu Quality Gate**.
 
 Em Pull Requests, o Terraform executa `init`, `validate` e `plan`, permitindo revisar previamente o impacto de infraestrutura. O `apply` é permitido somente após o merge na `main` e depende de aprovação manual.
 
@@ -144,9 +150,48 @@ Entre as validações executadas estão:
 - compilação em modo `Release`;
 - compilação com warnings tratados como erro;
 - execução de testes automatizados com xUnit;
-- geração de cobertura de testes;
+- geração de cobertura de testes nos formatos Cobertura e OpenCover;
 - publicação do resultado de cobertura no Azure DevOps;
+- análise estática de código com SonarQube Cloud;
+- validação do Quality Gate;
+- análise de segurança, confiabilidade, manutenibilidade e duplicações;
 - validação de secrets da pipeline sem exposição de seu conteúdo.
+
+### SonarQube Cloud
+
+O **SonarQube Cloud** está integrado ao CI através da extensão oficial para Azure Pipelines.
+
+A análise é executada durante os Pull Requests, antes do merge para a branch `main`, permitindo avaliar a qualidade do código introduzido antes de sua promoção.
+
+O fluxo de análise ocorre junto ao processo de build e testes:
+
+```text
+SonarQube Prepare
+        │
+        ▼
+      Build
+        │
+        ▼
+      Testes
+        │
+        ▼
+Cobertura de código
+        │
+        ▼
+SonarQube Analysis
+        │
+        ▼
+   Quality Gate
+```
+
+A cobertura é gerada em dois formatos:
+
+- **Cobertura** — utilizada para publicação dos resultados de cobertura no Azure DevOps;
+- **OpenCover** — utilizada pelo SonarQube Cloud para análise da cobertura do código.
+
+O Quality Gate permite avaliar o código novo considerando métricas como cobertura, segurança, confiabilidade, manutenibilidade e duplicação.
+
+As tasks externas do SonarQube Cloud utilizadas pela pipeline são fixadas em uma versão específica, tornando a execução reproduzível e evitando alterações implícitas provocadas por atualizações de versão.
 
 O projeto utiliza o endpoint `/health` para validar automaticamente a disponibilidade da aplicação nos fluxos de deploy e rollback.
 
@@ -363,8 +408,12 @@ As principais regras configuradas são:
 - execução do CI antes do merge;
 - Status Check do Azure Pipelines obrigatório;
 - merge bloqueado quando o CI apresenta falha;
+- análise do código do Pull Request pelo SonarQube Cloud;
+- publicação do resultado do Quality Gate no Pull Request;
 - Force Push bloqueado;
 - utilização de **Squash and Merge**.
+
+Durante o Pull Request, o SonarQube Cloud analisa o código novo e disponibiliza o resultado do Quality Gate, permitindo avaliar qualidade, segurança e cobertura antes da realização do merge.
 
 ## Decisões de Arquitetura
 
@@ -378,7 +427,10 @@ Algumas decisões foram adotadas de forma intencional para o escopo do laborató
 - `Terraform Plan` e `Terraform Apply` são separados;
 - o Apply exige aprovação manual;
 - a autenticação Terraform/Azure utiliza identidade federada;
-- o rollback reutiliza artifacts de builds anteriores.
+- o rollback reutiliza artifacts de builds anteriores;
+- a análise de qualidade é realizada pelo SonarQube Cloud durante o CI;
+- a cobertura é publicada no Azure DevOps em formato Cobertura e analisada pelo SonarQube Cloud em formato OpenCover;
+- as tasks externas do SonarQube Cloud são fixadas em uma versão específica para garantir maior previsibilidade e reprodutibilidade da pipeline.
 
 ## Limitações e Próximas Evoluções
 
@@ -387,7 +439,6 @@ Algumas evoluções possíveis:
 - utilização de um **Container Registry**, como ACR ou GHCR;
 - deploy em infraestrutura persistente, como Azure Container Apps, App Service, VMs ou Kubernetes;
 - gerenciamento de secrets com Azure Key Vault;
-- análise estática mais avançada com SonarQube/SonarCloud;
 - observabilidade com métricas, logs e alertas;
 - deployment Blue-Green ou Canary;
 - scanners de segurança de dependências, containers e IaC.
@@ -406,7 +457,10 @@ O projeto demonstra um fluxo de CI/CD contemplando:
 - proteção da branch `main`;
 - build e testes automatizados;
 - cobertura de testes;
-- quality check;
+- análise estática de código com SonarQube Cloud;
+- Quality Gate executado durante o processo de Pull Request;
+- análise de segurança, confiabilidade, manutenibilidade e duplicações;
+- integração de cobertura de código com o SonarQube Cloud;
 - cache de dependências;
 - gerenciamento de secrets;
 - criação e versionamento de imagens Docker;
@@ -420,4 +474,4 @@ O projeto demonstra um fluxo de CI/CD contemplando:
 - autenticação federada com Azure;
 - versionamento semântico automatizado com GitVersion, propagação da versão entre CI/HML/PRD e criação automática de tags Git.
 
-A implementação foi construída de forma incremental, permitindo validar individualmente cada etapa e evoluir a pipeline mantendo rastreabilidade e controle sobre código, infraestrutura e versões implantadas.
+A implementação foi construída de forma incremental, permitindo validar individualmente cada etapa e evoluir a pipeline mantendo rastreabilidade e controle sobre código, infraestrutura, qualidade e versões implantadas.

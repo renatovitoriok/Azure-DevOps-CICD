@@ -88,7 +88,7 @@ stages:
     - script: dotnet restore $(projectPath)
       displayName: 'Restaurar dependências'
 
-    - task: SonarCloudPrepare@3
+    - task: SonarCloudPrepare@4
       displayName: 'Preparar análise SonarQube Cloud'
       inputs:
         SonarQube: 'sonarcloud-sc'
@@ -135,10 +135,10 @@ stages:
       inputs:
         summaryFileLocation: '$(Agent.TempDirectory)/TestResults/**/coverage.cobertura.xml'
 
-    - task: SonarCloudAnalyze@3
+    - task: SonarCloudAnalyze@4
       displayName: 'Executar análise SonarQube Cloud'
 
-    - task: SonarCloudPublish@3
+    - task: SonarCloudPublish@4
       displayName: 'Publicar Quality Gate SonarQube Cloud'
       inputs:
         pollingTimeoutSec: '300'

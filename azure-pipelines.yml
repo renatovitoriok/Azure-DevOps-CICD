@@ -88,6 +88,17 @@ stages:
     - script: dotnet restore $(projectPath)
       displayName: 'Restaurar dependências'
 
+    - task: SonarCloudPrepare@4.2.6
+      displayName: 'Preparar análise SonarQube Cloud'
+      inputs:
+        SonarQube: 'sonarcloud-sc'
+        organization: 'renatovitoriok'
+        scannerMode: 'dotnet'
+        projectKey: 'renatovitoriok_Azure-DevOps-CICD'
+        projectName: 'Azure-DevOps-CICD'
+        extraProperties: |
+          sonar.cs.opencover.reportsPaths=$(Agent.TempDirectory)/TestResults/**/coverage.opencover.xml
+
     - script: |
         if [ -z "$APP_API_KEY" ]; then
           echo "Secret APP_API_KEY não foi carregado."
@@ -115,7 +126,7 @@ stages:
           -p:Version=$(appVersion) \
           -p:AssemblyVersion=$(appVersion).0 \
           -p:FileVersion=$(appVersion).0 \
-          --collect:"XPlat Code Coverage" \
+          --collect:"XPlat Code Coverage;Format=cobertura,opencover" \
           --results-directory "$(Agent.TempDirectory)/TestResults"
       displayName: 'Executar testes com cobertura'
 
@@ -123,6 +134,14 @@ stages:
       displayName: 'Publicar cobertura de testes'
       inputs:
         summaryFileLocation: '$(Agent.TempDirectory)/TestResults/**/coverage.cobertura.xml'
+
+    - task: SonarCloudAnalyze@4.2.6
+      displayName: 'Executar análise SonarQube Cloud'
+
+    - task: SonarCloudPublish@4.2.6
+      displayName: 'Publicar Quality Gate SonarQube Cloud'
+      inputs:
+        pollingTimeoutSec: '300'
 
     - script: dotnet publish $(projectPath) --configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory) --no-build
       displayName: 'Publicar aplicação'
